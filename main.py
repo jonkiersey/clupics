@@ -54,15 +54,16 @@ class PidListHandler(RequestHandler):
         return self.render('pid-list')
 			
 class JsonPidListHandler(webapp2.RequestHandler):
-    def get(self):
-        submissions = []
-        for submission in Submission.all().order('-post_time'):
-            submissions.append({
-                'name': submission.name,
-                'pid': submission.pid,
-                'image_url': submission.image_url,
+	def get(self):
+		submissions = []
+		#subs= Submission.gql("WHERE pid=:1", 11)
+		for submission in Submission.all().order('-post_time'):
+			submissions.append({
+				'name': submission.name,
+				'pid': submission.pid,
+				'image_url': submission.image_url,
             })
-        self.response.out.write(json.dumps(submissions))
+        	self.response.out.write(json.dumps(submissions))
 
 class JsonSubmissionListHandler(webapp2.RequestHandler):
     def get(self):
@@ -70,6 +71,7 @@ class JsonSubmissionListHandler(webapp2.RequestHandler):
         for submission in Submission.all().order('-post_time'):
             submissions.append({
                 'name': submission.name,
+				'usid': submission.usid,
                 'pid': submission.pid,
                 'image_url': submission.image_url,
 				'post_time': str(submission.post_time),
@@ -79,9 +81,10 @@ class JsonSubmissionListHandler(webapp2.RequestHandler):
     def post(self):
         form = json.loads(self.request.get('form'))
         name = form['name']
+        usid = form['usid']
         pid = form['pid']
         image_url = form['image-url']
-        Submission(name=name, pid=pid, image_url=image_url).put()
+        Submission(name=name, usid=usid, pid=pid, image_url=image_url).put()
 
 class JsonGoalListHandler(webapp2.RequestHandler):
     def get(self):
@@ -105,6 +108,9 @@ class UpvoteHandler(webapp2.RequestHandler):
 		usid = self.request('usid')
 		submissions = db.GqlQuery("Select * from Submission where usid = :1", usid)
 		for sub in submissions:
+			self.response.out.write(sub.usid)
+			self.response.out.write(sub.ups)
+			self.response.out.write(sub.downs)
 			sub.ups += 1
 			sub.put()
 
@@ -113,12 +119,37 @@ class DownvoteHandler(webapp2.RequestHandler):
 		usid = self.request('usid')
 		submissions = db.GqlQuery("Select * from Submission where usid = :1", usid)
 		for sub in submissions:
+			self.response.out.write(sub.usid)
+			self.response.out.write(sub.ups)
+			self.response.out.write(sub.downs)
 			sub.downs += 1
 			sub.put()
 
+class TestHandler(webapp2.RequestHandler):	
+	def get(self):
+		self.response.out.write("""
+		<html><body>
+		<form name="input" action="/upvote" method="get">
+			USID:<input type="text" name="usid"><br/>
+			<input type ="submit" value = "upvote">
+		</form>
+		<form name="input" action="/downvote" method="get">
+			USID:<input type="text" name="usid"><br/>
+			<input type ="submit" value = "downvote">
+		</form>
+		<form name="input" action="/pid" method="get">
+			PID:<input type="text" name="pid"><br/>
+			<input type ="submit" value = "Get One PID">
+		</form>
+		""")	
+
+
 app = webapp2.WSGIApplication([
     ('/', SubmissionListHandler),
-    webapp2.Route(r'/pid', name='submission-list',
+    ('/test', TestHandler),
+    ('/upvote', UpvoteHandler),
+    ('/downvote', DownvoteHandler),
+    webapp2.Route(r'/pid', name='pid-list',
                   handler=PidListHandler, methods=['GET']),
     webapp2.Route(r'/json/pid', name='json-pid-list',
                   handler=JsonPidListHandler, methods=['GET']),

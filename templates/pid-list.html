@@ -1,5 +1,51 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div id="pid-list"></div>
+&nbsp;
+<div id="pid-list"/>
+{% endblock %}
+
+{% block scripts %}
+<script type="text/javascript">
+	$(document).ready(function ()
+	{
+		function refreshList()
+		{
+			$.ajax({
+				url: '{{ uri_for("json-pid-list") }}',
+				type: 'GET',
+			})
+			.done(function (data)
+			{
+				var list = $('#pid-list');
+				var result = JSON.parse(data);
+
+				list.empty();
+
+				for (i = 0; i < result.length; i++)
+				{
+					var entry = $('<div></div>');
+					var name = $('<h3>' + result[i].name + '</h3>');
+					var pid = $('<h3>' + result[i].pid + '</h3>');
+					var img = $('<img src="' + result[i].image_url + '" ' +
+					            'alt="' + result[i].name + '" ' +
+					            'width="400" height="300" />');
+
+					entry.append(name);
+					entry.append(pid);
+					entry.append(img);
+
+					list.append(entry);
+				}
+			})
+			.fail(function ()
+			{
+				$('#pid-list').replaceWith(
+					$('<p class="text-error">Unable to load submission ' +
+					  'photos. Please refresh the page to try again.'));
+			});
+		}
+		refreshList();
+	});
+</script>
 {% endblock %}
