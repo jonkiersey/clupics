@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block content %}
+&nbsp;
+<form id="add-goal-form" class="form-inline">
+	<input name="prompt" type="text" placeholder="Prompt" />
+	<input name="pid" type="text" placeholder="PID" />
+	<button id="add-btn" type="button" class="btn"
+			data-loading-text="Adding...">Add</button>
+	<span id="form-errors" class="pull-right"></span>
+</form>
+<div id="goal-list">
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script type="text/javascript">
+	$(document).ready(function ()
+	{
+		$('#add-btn').click(function ()
+		{
+			var json = JSON.stringify($('#add-goal-form').serializeObject());
+			$.ajax({
+				url: '{{ uri_for("json-goal-list") }}',
+				type: 'POST',
+				data: {'form': json},
+			})
+			.done(function ()
+			{
+				$('#add-btn').button('reset');
+
+				var msg = $('<p class="text-success">Goal added</p>');
+				$('#form-errors').html(msg);
+				msg.fadeOut(2000);
+				refreshList();
+				$('#add-form input').val('');
+			})
+			.fail(function ()
+			{
+				$('#add-btn').button('reset');
+				var msg = $('<p class="text-error">An error occurred. Please ' +
+					        'refresh the page and try again.');
+
+				$('#form-errors').html(msg);
+			});
+		});
+		
+		function refreshList()
+		{
+			$.ajax({
+				url: '{{ uri_for("json-goal-list") }}',
+				type: 'GET',
+			})
+			.done(function (data)
+			{
+				var list = $('#goal-list');
+				var result = JSON.parse(data);
+
+				list.empty();
+
+				for (i = 0; i < result.length; i++)
+				{
+					var entry = $('<div></div>');
+					var prompt = $('<h3>' + result[i].prompt + '</h3>');
+					var pid = $('<h3>' + result[i].pid + '</h3>');
+					entry.append(prompt);
+					entry.append(pid);
+
+					list.append(entry);
+				}
+			})
+			.fail(function ()
+			{
+				$('#goal-list').replaceWith(
+					$('<p class="text-error">Unable to load goal ' +
+					  'photos. Please refresh the page to try again.'));
+			});
+		}
+
+		refreshList();
+	});
+</script>
+{% endblock %}

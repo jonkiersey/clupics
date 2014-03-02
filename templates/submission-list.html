@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block content %}
+&nbsp;
+<form id="add-form" class="form-inline">
+	<input name="name" type="text" placeholder="Name" />
+	<input name="pid" type="text" placeholder="pid" />
+	<input name="image-url" type="text" placeholder="Image URL" />
+	<button id="add-btn" type="button" class="btn"
+			data-loading-text="Adding...">Add</button>
+	<span id="form-errors" class="pull-right"></span>
+</form>
+<div id="submission-list">
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script type="text/javascript">
+	$(document).ready(function ()
+	{
+		$('#add-btn').click(function ()
+		{
+			var json = JSON.stringify($('#add-form').serializeObject());
+			$.ajax({
+				url: '{{ uri_for("json-submission-list") }}',
+				type: 'POST',
+				data: {'form': json},
+			})
+			.done(function ()
+			{
+				$('#add-btn').button('reset');
+
+				var msg = $('<p class="text-success">Photo added</p>');
+				$('#form-errors').html(msg);
+				msg.fadeOut(2000);
+				refreshList();
+				$('#add-form input').val('');
+			})
+			.fail(function ()
+			{
+				$('#add-btn').button('reset');
+				var msg = $('<p class="text-error">An error occurred. Please ' +
+					        'refresh the page and try again.');
+
+				$('#form-errors').html(msg);
+			});
+		});
+		
+		function refreshList()
+		{
+			$.ajax({
+				url: '{{ uri_for("json-submission-list") }}',
+				type: 'GET',
+			})
+			.done(function (data)
+			{
+				var list = $('#submission-list');
+				var result = JSON.parse(data);
+
+				list.empty();
+
+				for (i = 0; i < result.length; i++)
+				{
+					var entry = $('<div></div>');
+					var name = $('<h3>' + result[i].name + '</h3>');
+					var pid = $('<h3>' + result[i].pid + '</h3>');
+					var img = $('<img src="' + result[i].image_url + '" ' +
+					            'alt="' + result[i].name + '" ' +
+					            'width="400" height="300" />');
+
+					entry.append(name);
+					entry.append(pid);
+					entry.append(img);
+
+					list.append(entry);
+				}
+			})
+			.fail(function ()
+			{
+				$('#submission-list').replaceWith(
+					$('<p class="text-error">Unable to load submission ' +
+					  'photos. Please refresh the page to try again.'));
+			});
+		}
+
+		refreshList();
+	});
+</script>
+{% endblock %}
